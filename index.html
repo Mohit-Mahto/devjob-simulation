@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="theme-color" content="#0b0f1a" />
+  <meta name="description" content="DEVJOB SIMULATION - Code your career path. Multi-language IDE with AI hints." />
+  <title>DEVJOB SIMULATION</title>
+
+  <!-- PWA -->
+  <link rel="manifest" href="manifest.json" />
+  <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:ital,wght@0,300;0,400;0,500;0,600;1,400&family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
+
+  <!-- Razorpay (payment) -->
+  <script src="https://checkout.razorpay.com/v1/checkout.js" defer></script>
+
+  <link rel="stylesheet" href="css/main.css" />
+</head>
+<body>
+
+<!-- ════════════════════════════════════════
+     TOP NAVIGATION BAR
+════════════════════════════════════════ -->
+<header class="topbar" id="topbar">
+  <div class="topbar-brand">
+    <div class="brand-logo">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+        <path d="M8 3L4 7l4 4M16 3l4 4-4 4M14 3l-4 18" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    <span class="brand-text">DEVJOB <strong>SIM</strong></span>
+  </div>
+
+  <!-- File tabs -->
+  <div class="filetabs" id="filetabs">
+    <div class="filetab active" data-id="1">
+      <span class="filetab-dot python"></span>
+      <span class="filetab-name">main.py</span>
+      <button class="filetab-close" onclick="closeTab(this)">×</button>
+    </div>
+    <button class="filetab-add" onclick="addTab()" title="New file">+</button>
+  </div>
+
+  <div class="topbar-right">
+    <!-- Language UI toggle -->
+    <div class="uilang-toggle" id="uilangToggle">
+      <button class="uilang-btn active" data-lang="en" onclick="setUILang('en')">EN</button>
+      <button class="uilang-btn" data-lang="hi" onclick="setUILang('hi')">हिं</button>
+      <button class="uilang-btn" data-lang="pa" onclick="setUILang('pa')">ਪੰ</button>
+    </div>
+
+    <div class="topbar-stats">
+      <span class="stat-chip flame" title="Streak">🔥 <span id="streakVal">7</span></span>
+      <span class="stat-chip xp" title="XP">⚡ <span id="xpVal">1,240</span></span>
+    </div>
+
+    <div class="topbar-actions">
+      <button class="btn btn-ghost" id="btnLogin" onclick="openModal('modalLogin')" data-i18n="login">Login</button>
+      <button class="btn btn-accent" id="btnUpgrade" onclick="openModal('modalPlans')" data-i18n="upgrade">Upgrade</button>
+      <div class="user-pill hidden" id="userPill" onclick="openModal('modalDash')">
+        <div class="user-avatar" id="userAvatar">MK</div>
+        <span id="userName">User</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+
+<!-- ════════════════════════════════════════
+     MAIN LAYOUT: SIDEBAR + EDITOR + OUTPUT
+════════════════════════════════════════ -->
+<div class="workspace" id="workspace">
+
+  <!-- ── LEFT SIDEBAR ── -->
+  <aside class="sidebar">
+    <nav class="sidebar-icons">
+      <button class="sicon active" title="Explorer" data-panel="explorer" onclick="setPanel(this,'explorer')">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M22 19a2 2 0 01-2 2H4a2 2 0 01-2-2V5a2 2 0 012-2h5l2 3h9a2 2 0 012 2z"/></svg>
+      </button>
+      <button class="sicon" title="Challenges" data-panel="challenges" onclick="setPanel(this,'challenges')">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+      </button>
+      <button class="sicon" title="Roadmap" data-panel="roadmap" onclick="setPanel(this,'roadmap')">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/></svg>
+      </button>
+      <button class="sicon" title="Leaderboard" data-panel="leaderboard" onclick="setPanel(this,'leaderboard')">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
+      </button>
+    </nav>
+
+    <!-- PANEL: Explorer -->
+    <div class="sidepanel active" id="panel-explorer">
+      <p class="sidepanel-label" data-i18n="explorer">Explorer</p>
+
+      <!-- Role card -->
+      <div class="role-card" id="roleCard">
+        <div class="role-tag">Predicted Role</div>
+        <div class="role-name" id="roleName">Backend Engineer</div>
+        <div class="role-conf-row">
+          <div class="role-conf-track"><div class="role-conf-bar" id="roleConfBar" style="width:78%"></div></div>
+          <span id="roleConfTxt">70%</span>
+        </div>
+        <button class="btn-xs" onclick="predictRole()">Re‑analyze</button>
+      </div>
+
+      <!-- Run quota -->
+      <div class="quota-box">
+        <div class="quota-top">
+          <span data-i18n="dailyRuns">Daily Runs</span>
+          <span class="plan-tag" id="planTag">FREE</span>
+        </div>
+        <div class="quota-dots" id="quotaDots"></div>
+        <div class="quota-sub"><span id="quotaUsedTxt">3</span>/7 runs used</div>
+      </div>
+
+      <!-- XP bar -->
+      <div class="xp-block">
+        <div class="xp-row"><span>Level 8</span><span>1,240 / 2,000 XP</span></div>
+        <div class="xp-track"><div class="xp-bar" style="width:62%"></div></div>
+      </div>
+
+      <!-- Streak calendar -->
+      <div class="streak-block">
+        <div class="streak-hd">🔥 <span data-i18n="streak">Streak</span></div>
+        <div class="streak-days" id="streakDays"></div>
+      </div>
+    </div>
+
+    <!-- PANEL: Challenges -->
+    <div class="sidepanel" id="panel-challenges">
+      <p class="sidepanel-label" data-i18n="challenges">Challenges</p>
+      <div id="challengeList"></div>
+    </div>
+
+    <!-- PANEL: Roadmap -->
+    <div class="sidepanel" id="panel-roadmap">
+      <p class="sidepanel-label" data-i18n="roadmap">Roadmap</p>
+      <div id="roadmapList"></div>
+    </div>
+
+    <!-- PANEL: Leaderboard -->
+    <div class="sidepanel" id="panel-leaderboard">
+      <p class="sidepanel-label" data-i18n="leaderboard">Leaderboard</p>
+      <div id="lbList"></div>
+    </div>
+  </aside>
+
+  <!-- ── EDITOR COLUMN ── -->
+  <main class="editor-col">
+    <!-- Toolbar -->
+    <div class="editor-toolbar">
+      <div class="toolbar-left">
+        <select id="langSelect" class="lang-select" onchange="changeLang(this.value)">
+          <option value="python">🐍 Python</option>
+          <option value="cpp">⚙️ C++</option>
+          <option value="javascript">✨ JavaScript</option>
+          <option value="html">🌐 HTML/CSS</option>
+        </select>
+
+        <button class="collab-btn" id="collabBtn" onclick="toggleCollab()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+          <span data-i18n="collab">Collab</span>
+          <span class="collab-dot" id="collabDot">OFF</span>
+        </button>
+      </div>
+      <div class="toolbar-right">
+        <button class="btn btn-sm btn-ghost" onclick="clearEditor()" data-i18n="clear">Clear</button>
+        <button class="btn btn-sm btn-ghost pro-gate" onclick="downloadCode()" id="btnDownload">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          <span data-i18n="download">Download</span>
+          <span class="pro-tag">PRO</span>
+        </button>
+        <button class="btn btn-run" id="btnRun" onclick="runCode()">
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+          <span data-i18n="run">Run Code</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Editor area -->
+    <div class="editor-area" id="editorArea">
+      <div class="line-nums" id="lineNums"></div>
+      <textarea
+        id="codeEditor"
+        class="code-editor"
+        spellcheck="false"
+        autocorrect="off"
+        autocomplete="off"
+        autocapitalize="off"
+        aria-label="Code editor"
+      ></textarea>
+    </div>
+
+    <!-- Status bar -->
+    <div class="statusbar">
+      <div class="sb-left">
+        <span id="sbLang">🐍 Python 3.11</span>
+        <span class="sb-sep">|</span>
+        <span id="sbCursor">Ln 1, Col 1</span>
+        <span class="sb-sep">|</span>
+        <span id="sbLines">0 lines</span>
+      </div>
+      <div class="sb-right">
+        <span id="sbCollab" class="sb-collab-off">● Collab OFF</span>
+        <span class="sb-sep">|</span>
+        <span id="sbNetwork">📶 Online</span>
+      </div>
+    </div>
+  </main>
+
+  <!-- ── OUTPUT PANEL ── -->
+  <aside class="output-panel">
+    <div class="output-tabs">
+      <button class="otab active" onclick="setOutTab(this,'out-output')" data-i18n="output">Output</button>
+      <button class="otab" onclick="setOutTab(this,'out-errors')" data-i18n="errors">Errors</button>
+      <button class="otab" onclick="setOutTab(this,'out-ai')">AI Hint 🤖</button>
+      <button class="otab hidden" id="tabPreview" onclick="setOutTab(this,'out-preview')">Preview</button>
+    </div>
+
+    <!-- Output -->
+    <div class="out-body active" id="out-output">
+      <div class="out-toolbar">
+        <span data-i18n="output">Output</span>
+        <button class="btn-xs" onclick="clearOutput()">Clear</button>
+      </div>
+      <div class="out-content" id="outputContent">
+        <div class="out-placeholder">
+          <div class="ph-icon">▶</div>
+          <span data-i18n="runToSee">Run your code to see output</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- Errors -->
+    <div class="out-body" id="out-errors">
+      <div class="out-toolbar">
+        <span data-i18n="errors">Errors</span>
+        <span class="err-badge" id="errBadge">0</span>
+      </div>
+      <div class="err-list" id="errList">
+        <div class="no-err">✅ <span data-i18n="noErrors">No errors detected</span></div>
+      </div>
+    </div>
+
+    <!-- AI Hint Chatbot -->
+    <div class="out-body ai-body" id="out-ai">
+      <div class="ai-header">
+        <div class="ai-avatar-wrap">
+          <div class="ai-ava">🤖</div>
+          <div class="ai-status-dot"></div>
+        </div>
+        <div>
+          <div class="ai-name">DevBot</div>
+          <div class="ai-sub" data-i18n="aiSub">Hints only — no spoilers!</div>
+        </div>
+      </div>
+      <div class="ai-msgs" id="aiMsgs">
+        <div class="ai-msg bot">
+          <div class="ai-bubble" data-i18n="aiWelcome">Hi! I'm DevBot 👋 Ask me for hints — I'll guide you without giving away the answer!</div>
+        </div>
+      </div>
+      <div class="ai-input-row">
+        <textarea class="ai-input" id="aiInput" placeholder="Ask for a hint..." rows="2" onkeydown="aiKey(event)"></textarea>
+        <button class="ai-send" onclick="sendAI()">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor"><path d="M22 2L11 13M22 2l-7 20-4-9-9-4 20-7z"/></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- HTML Preview -->
+    <div class="out-body" id="out-preview">
+      <div class="out-toolbar">
+        <span>Live Preview</span>
+        <button class="btn-xs" onclick="refreshPreview()">↺ Refresh</button>
+      </div>
+      <iframe id="htmlFrame" class="html-frame" sandbox="allow-scripts"></iframe>
+    </div>
+  </aside>
+
+</div><!-- end workspace -->
+
+
+<!-- ════════════════════════════════════════
+     MODALS
+════════════════════════════════════════ -->
+
+<!-- Login Modal -->
+<div class="modal-bg" id="modalLogin" onclick="bgClose(event,'modalLogin')">
+  <div class="modal">
+    <div class="modal-head">
+      <h2>Welcome back 👋</h2>
+      <button class="modal-x" onclick="closeModal('modalLogin')">×</button>
+    </div>
+    <p class="modal-sub" data-i18n="loginSub">Sign in to save progress and unlock challenges.</p>
+    <label class="flabel" data-i18n="email">Email</label>
+    <input class="finput" id="loginEmail" type="email" placeholder="you@example.com" />
+    <label class="flabel" data-i18n="password">Password</label>
+    <input class="finput" id="loginPw" type="password" placeholder="••••••••" />
+    <div class="ferr hidden" id="loginErr"></div>
+    <button class="btn btn-accent full-w" onclick="doLogin()" data-i18n="signIn">Sign In</button>
+    <div class="divider"><span>or</span></div>
+    <button class="btn btn-google full-w" onclick="googleLogin()">
+      <svg width="17" height="17" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20H42V20H24v8h11.3C33.7 32.9 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.1 7.9 3l5.7-5.7C34 6.5 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.7-.4-4z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.5 16 19 12 24 12c3.1 0 5.8 1.1 7.9 3l5.7-5.7C34 6.5 29.3 4 24 4 16.3 4 9.7 8.4 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2L31 33.5C29 35 26.6 36 24 36c-5.3 0-9.7-3.1-11.3-7.9l-6.6 5.1C9.7 39.6 16.3 44 24 44z"/><path fill="#1976D2" d="M43.6 20H42V20H24v8h11.3c-.8 2.2-2.2 4.1-4.1 5.5l6.4 4.9C43.2 35.3 44 30 44 24c0-1.3-.1-2.7-.4-4z"/></svg>
+      Continue with Google
+    </button>
+    <p class="modal-foot">No account? <a href="#" onclick="swapModal('modalLogin','modalRegister')" data-i18n="registerFree">Register free →</a></p>
+  </div>
+</div>
+
+<!-- Register Modal -->
+<div class="modal-bg" id="modalRegister" onclick="bgClose(event,'modalRegister')">
+  <div class="modal">
+    <div class="modal-head">
+      <h2>Create Account 🚀</h2>
+      <button class="modal-x" onclick="closeModal('modalRegister')">×</button>
+    </div>
+    <p class="modal-sub">Join 500+ students. No credit card needed.</p>
+    <div class="form-row">
+      <div>
+        <label class="flabel">Full Name</label>
+        <input class="finput" id="regName" type="text" placeholder="Mohit Kumar" />
+      </div>
+      <div>
+        <label class="flabel">College</label>
+        <input class="finput" id="regCollege" type="text" placeholder="CEC Jhanjeri" />
+      </div>
+    </div>
+    <label class="flabel">Email</label>
+    <input class="finput" id="regEmail" type="email" placeholder="you@example.com" />
+    <label class="flabel">Password</label>
+    <input class="finput" id="regPw" type="password" placeholder="Min. 8 characters" />
+    <div class="ferr hidden" id="regErr"></div>
+    <button class="btn btn-accent full-w" onclick="doRegister()">Create Account — Free!</button>
+    <button class="btn btn-google full-w" style="margin-top:8px" onclick="googleLogin()">
+      <svg width="17" height="17" viewBox="0 0 48 48"><path fill="#FFC107" d="M43.6 20H42V20H24v8h11.3C33.7 32.9 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3.1 0 5.8 1.1 7.9 3l5.7-5.7C34 6.5 29.3 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.7-.4-4z"/><path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.5 16 19 12 24 12c3.1 0 5.8 1.1 7.9 3l5.7-5.7C34 6.5 29.3 4 24 4 16.3 4 9.7 8.4 6.3 14.7z"/><path fill="#4CAF50" d="M24 44c5.2 0 9.9-2 13.4-5.2L31 33.5C29 35 26.6 36 24 36c-5.3 0-9.7-3.1-11.3-7.9l-6.6 5.1C9.7 39.6 16.3 44 24 44z"/><path fill="#1976D2" d="M43.6 20H42V20H24v8h11.3c-.8 2.2-2.2 4.1-4.1 5.5l6.4 4.9C43.2 35.3 44 30 44 24c0-1.3-.1-2.7-.4-4z"/></svg>
+      Sign up with Google
+    </button>
+    <p class="modal-foot">Have account? <a href="#" onclick="swapModal('modalRegister','modalLogin')">Sign in →</a></p>
+  </div>
+</div>
+
+<!-- Plans Modal -->
+<div class="modal-bg" id="modalPlans" onclick="bgClose(event,'modalPlans')">
+  <div class="modal modal-wide">
+    <div class="modal-head">
+      <h2 data-i18n="choosePlan">Choose Your Plan</h2>
+      <button class="modal-x" onclick="closeModal('modalPlans')">×</button>
+    </div>
+    <p class="modal-sub">Unlock unlimited runs, AI mentor, certificates, and real-time collaboration.</p>
+    <div class="plans-grid">
+      <div class="plan-card" onclick="selectPlan(this,'free')">
+        <div class="plan-name">Free</div>
+        <div class="plan-price">₹0<span>/mo</span></div>
+        <ul class="plan-feats">
+          <li>✅ 7 code runs/day</li>
+          <li>✅ Job role prediction</li>
+          <li>❌ AI hints</li>
+          <li>❌ Code download</li>
+          <li>❌ Collab mode</li>
+        </ul>
+      </div>
+      <div class="plan-card selected" onclick="selectPlan(this,'basic')">
+        <div class="plan-badge">POPULAR</div>
+        <div class="plan-name">Basic</div>
+        <div class="plan-price">₹99<span>/mo</span></div>
+        <ul class="plan-feats">
+          <li>✅ Unlimited runs</li>
+          <li>✅ All challenges</li>
+          <li>✅ Code download</li>
+          <li>✅ AI hint assistant</li>
+          <li>❌ Collab mode</li>
+        </ul>
+      </div>
+      <div class="plan-card plan-pro" onclick="selectPlan(this,'pro')">
+        <div class="plan-badge plan-badge-pro">PRO</div>
+        <div class="plan-name">Pro</div>
+        <div class="plan-price">₹199<span>/mo</span></div>
+        <ul class="plan-feats">
+          <li>✅ Everything in Basic</li>
+          <li>✅ Real-time Collab</li>
+          <li>✅ Unlimited AI mentor</li>
+          <li>✅ Completion certificate</li>
+          <li>✅ Resume builder</li>
+        </ul>
+      </div>
+    </div>
+    <div class="plan-cta">
+      <div class="plan-selected-txt" id="planSelectedTxt">Selected: Basic — ₹99/month</div>
+      <button class="btn btn-accent btn-pay" onclick="payRazorpay()" id="btnPay">
+        🔒 Pay with Razorpay
+      </button>
+      <p class="pay-note">Secure · GST Inclusive · Cancel Anytime</p>
+    </div>
+  </div>
+</div>
+
+<!-- Dashboard Modal -->
+<div class="modal-bg" id="modalDash" onclick="bgClose(event,'modalDash')">
+  <div class="modal modal-wide">
+    <div class="modal-head">
+      <h2 data-i18n="dashboard">My Dashboard</h2>
+      <button class="modal-x" onclick="closeModal('modalDash')">×</button>
+    </div>
+    <div class="dash-grid">
+      <div class="dash-card"><div class="dash-lbl">Plan</div><div class="dash-val" id="dashPlan">Free</div></div>
+      <div class="dash-card"><div class="dash-lbl">XP Earned</div><div class="dash-val">1,240</div></div>
+      <div class="dash-card"><div class="dash-lbl">Challenges Done</div><div class="dash-val">12</div></div>
+      <div class="dash-card"><div class="dash-lbl">Streak</div><div class="dash-val">🔥 7 days</div></div>
+    </div>
+    <div class="dash-section">
+      <h3>Subscription</h3>
+      <div id="subInfo"><p>You're on the <strong>Free</strong> plan.</p>
+        <button class="btn btn-accent btn-sm" onclick="swapModal('modalDash','modalPlans')">Upgrade Now</button>
+      </div>
+    </div>
+    <div class="dash-section">
+      <h3>Account</h3>
+      <p id="dashEmail" class="dash-email">Not logged in</p>
+      <button class="btn btn-ghost btn-sm" onclick="doLogout()">Sign Out</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<!-- PWA install banner -->
+<div class="pwa-banner hidden" id="pwaBanner">
+  <span>📱 Install DEVJOB SIM for offline use!</span>
+  <button class="btn btn-sm btn-accent" onclick="installPWA()">Install</button>
+  <button class="btn-xs" onclick="document.getElementById('pwaBanner').classList.add('hidden')">✕</button>
+</div>
+
+<!-- Scripts -->
+<script src="js/i18n.js"></script>
+<script src="js/editor.js"></script>
+<script src="js/auth.js"></script>
+<script src="js/payment.js"></script>
+<script src="js/ai.js"></script>
+<script src="js/challenges.js"></script>
+<script src="js/pwa.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>
